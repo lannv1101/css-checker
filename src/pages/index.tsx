@@ -1,115 +1,240 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+import React, { useState, useMemo, useCallback } from "react";
+import Head from "next/head";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Loader2, Download } from "lucide-react";
+import * as XLSX from "xlsx";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+// Types
+interface UnusedRule {
+  selector: string;
+  used: boolean;
+  bytes: number;
+}
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+interface FileResult {
+  url: string;
+  total: number;
+  used: number;
+  unusedRules: UnusedRule[];
+}
 
-export default function Home() {
+interface AnalysisResult {
+  totalBytes: number;
+  usedBytes: number;
+  usagePercent: number;
+  files: FileResult[];
+}
+
+// Components
+const StatsCard = ({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number;
+}) => (
+  <div className="p-4 bg-gray-50 rounded-lg">
+    <p className="text-sm text-gray-600">{label}</p>
+    <p className="text-xl font-bold">{value}</p>
+  </div>
+);
+
+const FileDetails = ({ file, index }: { file: FileResult; index: number }) => {
+  const usagePercentage = useMemo(
+    () => ((file.used / file.total) * 100).toFixed(2),
+    [file.used, file.total]
+  );
+
   return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
+    <AccordionItem
+      value={`item-${index}`}
+      className="border rounded-lg px-4 bg-white shadow-sm"
     >
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/pages/index.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      <AccordionTrigger className="hover:no-underline py-4">
+        <div className="flex justify-between items-center w-full pr-4">
+          <p className="font-medium truncate max-w-2xl text-left">{file.url}</p>
+          <div className="text-sm text-gray-600 ml-4">
+            {file.used}/{file.total} bytes ({usagePercentage}%)
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </AccordionTrigger>
+      <AccordionContent>
+        <div className="p-4 bg-gray-50 rounded-lg mt-2 border border-gray-200">
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="bg-white p-3 rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-600">Total Bytes</p>
+              <p className="text-lg font-semibold">{file.total}</p>
+            </div>
+            <div className="bg-white p-3 rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-600">Used Bytes</p>
+              <p className="text-lg font-semibold">{file.used}</p>
+            </div>
+          </div>
+          {file.unusedRules?.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-2">
+                Unused Rules:
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {file.unusedRules.map((rule, j) => (
+                  <div
+                    key={j}
+                    className="text-sm p-2 bg-red-50 rounded border border-red-100"
+                  >
+                    <p className="text-red-600 truncate">{rule.selector}</p>
+                    <p className="text-gray-500 text-xs">{rule.bytes} bytes</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+};
+
+export default function CSSChecker() {
+  const [url, setUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const checkCSS = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const res = await fetch("/api/check-css", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      if (!res.ok) throw new Error("Failed to analyze CSS");
+
+      const data = await res.json();
+      setResult(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [url]);
+
+  const exportToExcel = useCallback(() => {
+    if (!result) return;
+
+    const excelData = result.files.flatMap((file) => {
+      const baseData = {
+        "File URL": file.url,
+        "Total Bytes": file.total,
+        "Used Bytes": file.used,
+        "Usage Percentage": `${((file.used / file.total) * 100).toFixed(2)}%`,
+      };
+
+      if (!file.unusedRules?.length) {
+        return [baseData];
+      }
+
+      return file.unusedRules.map((rule) => ({
+        ...baseData,
+        "Unused Selector": rule.selector,
+        "Unused Bytes": rule.bytes,
+      }));
+    });
+
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "CSS Analysis");
+    XLSX.writeFile(wb, "css-analysis-report.xlsx");
+  }, [result]);
+
+  const stats = useMemo(() => {
+    if (!result) return null;
+    return {
+      totalBytes: result.totalBytes,
+      usedBytes: result.usedBytes,
+      usagePercent: result.usagePercent.toFixed(2),
+    };
+  }, [result]);
+
+  return (
+    <>
+      <Head>
+        <title>CSS Checker</title>
+      </Head>
+      <div className="max-w-4xl mx-auto p-4 space-y-6">
+        <h1 className="text-2xl font-bold text-center">CSS Usage Checker</h1>
+        <Card>
+          <CardContent className="p-4 space-y-4">
+            <Input
+              placeholder="Enter a website URL (e.g. https://example.com)"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <Button onClick={checkCSS} disabled={loading || !url}>
+                {loading ? (
+                  <Loader2 className="animate-spin w-4 h-4" />
+                ) : (
+                  "Check CSS"
+                )}
+              </Button>
+              {result && (
+                <Button
+                  onClick={exportToExcel}
+                  variant="outline"
+                  className="bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export to Excel
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {error && <p className="text-red-500 text-center">{error}</p>}
+
+        {result && stats && (
+          <Card>
+            <CardContent className="p-6 space-y-6">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <StatsCard
+                  label="Total CSS"
+                  value={`${stats.totalBytes} bytes`}
+                />
+                <StatsCard
+                  label="Used CSS"
+                  value={`${stats.usedBytes} bytes`}
+                />
+                <StatsCard label="Usage" value={`${stats.usagePercent}%`} />
+              </div>
+              <div className="pt-4">
+                <h2 className="text-lg font-semibold mb-4">File Details:</h2>
+                <Accordion
+                  type="single"
+                  collapsible
+                  className="w-full space-y-2"
+                >
+                  {result.files.map((file, i) => (
+                    <FileDetails key={i} file={file} index={i} />
+                  ))}
+                </Accordion>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </>
   );
 }
