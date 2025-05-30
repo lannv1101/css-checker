@@ -193,7 +193,7 @@ export default function CSSChecker() {
                 <Button
                   onClick={exportToExcel}
                   variant="outline"
-                  className="bg-blue-600 text-white hover:bg-blue-700"
+                  className="bg-green-600 text-white hover:bg-green-700"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Export to Excel
