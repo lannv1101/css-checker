@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 
 type CSSRule = {
   selector: string;
@@ -87,13 +88,11 @@ export default async function handler(
   let browser;
   try {
     browser = await puppeteer.launch({
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-web-security",
-        "--disable-features=IsolateOrigins,site-per-process",
-      ],
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
       headless: true,
+      ignoreDefaultArgs: true,
     });
 
     const page = await browser.newPage();
