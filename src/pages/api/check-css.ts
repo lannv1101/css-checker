@@ -88,21 +88,9 @@ export default async function handler(
   let browser;
   try {
     browser = await puppeteer.launch({
-      args: [
-        ...chromium.args,
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--no-first-run",
-        "--no-zygote",
-        "--single-process",
-        "--disable-extensions",
-      ],
       defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath(),
       headless: true,
-      ignoreDefaultArgs: ["--disable-extensions"],
     });
 
     const page = await browser.newPage();
